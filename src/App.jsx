@@ -130,7 +130,7 @@ export default function App() {
     <div style={{
       fontFamily: "'Georgia', 'Times New Roman', serif",
       background: "#0a0a0a", minHeight: "100vh",
-      maxWidth: 420, margin: "0 auto",
+      maxWidth: "100%", margin: "0 auto",
       display: "flex", flexDirection: "column",
       position: "relative", overflow: "hidden",
     }}>
@@ -170,7 +170,7 @@ export default function App() {
         }}>
           <div style={{
             background: "#141414", borderRadius: "24px 24px 0 0",
-            padding: 28, width: "100%", maxWidth: 420, margin: "0 auto",
+            padding: 28, width: "100%", maxWidth: "100%", margin: "0 auto",
             border: "1px solid #222", borderBottom: "none",
             animation: "slideUp 0.3s ease",
           }}>
@@ -214,7 +214,7 @@ export default function App() {
         }}>
           <div style={{
             background: "#141414", borderRadius: "24px 24px 0 0",
-            padding: 28, width: "100%", maxWidth: 420, margin: "0 auto",
+            padding: 28, width: "100%", maxWidth: "100%", margin: "0 auto",
             border: "1px solid #222", borderBottom: "none",
             animation: "slideUp 0.3s ease",
           }}>
