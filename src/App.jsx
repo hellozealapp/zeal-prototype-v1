@@ -136,7 +136,7 @@ export default function App() {
     }}>
       {/* Header */}
       <div style={{ padding: "20px 24px 12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ fontSize: 26, fontWeight: 700, color: "#f0ece4", letterSpacing: "-0.5px", fontStyle: "italic" }}>collab.</div>
+        <div style={{ fontSize: 26, fontWeight: 700, color: "#f0ece4", letterSpacing: "-0.5px", fontStyle: "italic" }}>Zeal</div>
         <div
           onClick={() => setActiveTab("Profile")}
           style={{
