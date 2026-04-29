@@ -7,6 +7,12 @@ const profiles = [
   { id: 4, name: "Eli M.", location: "Chicago, IL", mediums: ["Illustrator", "Muralist", "Zine Maker"], vibe: "Making a zine about queer joy in the midwest. Writers, photographers, poets — slide in.", seeking: ["Writer", "Photographer", "Poet"], color: "#FF9AA2", verified: false },
 ];
 
+const likedProfiles = [
+  { id: 5, name: "Yemi A.", location: "Oakland, CA", mediums: ["Filmmaker", "Editor"], vibe: "Making short docs about Bay Area subcultures. Looking for a creative collaborator.", color: "#FFD6A5", verified: true },
+  { id: 6, name: "Soo J.", location: "San Francisco, CA", mediums: ["Composer", "Pianist"], vibe: "Writing ambient music for short films and dance pieces.", color: "#BDB2FF", verified: false },
+  { id: 7, name: "Rafa M.", location: "Berkeley, CA", mediums: ["Poet", "Spoken Word"], vibe: "Working on a collection about grief and diaspora. Want to perform with musicians.", color: "#FF9AA2", verified: true },
+];
+
 const projects = [
   { id: 1, title: "Park Shakespeare: A Midsummer", creator: "Yolanda F.", type: "Theater", desc: "Putting on a free performance in Dolores Park this August. All experience levels welcome.", needs: ["Actors", "Costume Designer", "Sound"], spots: 6, emoji: "🎭", tagColor: "#FFD6A5" },
   { id: 2, title: "Ambient Score for a Short Film", creator: "Jin L.", type: "Music + Film", desc: "I have a 12-min short film that needs an original score. Looking for a composer who vibes with experimental ambient.", needs: ["Composer", "Sound Designer"], spots: 1, emoji: "🎬", tagColor: "#C8F5A0" },
@@ -20,6 +26,13 @@ const events = [
   { id: 3, title: "Bollywood Dance Social", host: "Desi Creatives Bay Area", location: "San Jose, CA", date: "Sat, May 3", time: "5:30 PM", type: "Dance", desc: "Come dance, meet other desi artists, talk about what you're working on. Beginners always welcome.", going: 52, tags: ["Dancers", "Choreographers", "Musicians"], color: "#FF9AA2", emoji: "💃", featured: true },
   { id: 4, title: "Poets in the Park", host: "Bay Area Literary Arts", location: "Dolores Park, SF", date: "Sun, May 4", time: "11:00 AM", type: "Writing", desc: "Bring something you wrote. Or just listen. Blankets and good vibes.", going: 27, tags: ["Poets", "Writers", "Everyone"], color: "#BDB2FF", emoji: "📝", featured: false },
   { id: 5, title: "Lo-Fi Jam Session", host: "Organized by Ren M.", location: "Temescal, Oakland", date: "Tue, May 6", time: "6:00 PM", type: "Music", desc: "Living room jam, 8 people max. Mostly jazz/soul/hip-hop adjacent. BYO instrument, snacks to share.", going: 7, tags: ["Producers", "Instrumentalists", "Vocalists"], color: "#C8F5A0", emoji: "🎸", featured: false },
+];
+
+const initialMessages = [
+  { id: 1, name: "Dani R.", source: "Connect", preview: "Hey I saw your profile and love your work!", time: "2m", unread: true, color: "#C8F5A0", messages: [{ from: "them", text: "Hey I saw your profile and love your work!" }, { from: "them", text: "Would love to co-write something together sometime 🎵" }] },
+  { id: 2, name: "Amara S.", source: "Project", preview: "Would love to have you on the video shoot", time: "1h", unread: true, color: "#BDB2FF", messages: [{ from: "them", text: "Hi! I'm putting together a dance music video and your background in Bharatanatyam is exactly what I'm looking for." }, { from: "them", text: "Would you be interested in joining?" }] },
+  { id: 3, name: "Starline Social Club", source: "Event", preview: "Open mic is tomorrow at 7pm — doors open at 6", time: "3h", unread: false, color: "#FFD6A5", messages: [{ from: "them", text: "Hey! Just a reminder that Open Mic is tomorrow at 7pm." }, { from: "them", text: "Doors open at 6. Can't wait to see you there 🎤" }] },
+  { id: 4, name: "Jin L.", source: "Project", preview: "Thanks for your interest in the film score!", time: "1d", unread: false, color: "#FF9AA2", messages: [{ from: "them", text: "Thanks so much for expressing interest in the film score project!" }, { from: "them", text: "Can we hop on a quick call this week to chat?" }] },
 ];
 
 const socialPlatforms = [
@@ -36,16 +49,16 @@ const sampleVideos = [
   { id: 2, label: "Choreography sketch — untitled", duration: "0:47", thumb: "#1e1a2e" },
 ];
 
-const tabs = ["Discover", "Projects", "Events", "Profile"];
-const tabIcons = { Discover: "✦", Projects: "◎", Events: "◈", Profile: "◐" };
 const filterTypes = ["All", "Music", "Dance", "Visual Art", "Writing", "Theater"];
+const sourceColors = { Connect: "#C8F5A0", Project: "#BDB2FF", Event: "#FFD6A5" };
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState("Discover");
+  const [activeTab, setActiveTab] = useState("Connect");
   const [cardIndex, setCardIndex] = useState(0);
   const [swipeDir, setSwipeDir] = useState(null);
   const [animating, setAnimating] = useState(false);
   const [matched, setMatched] = useState(false);
+  const [showLikes, setShowLikes] = useState(false);
   const [eventFilter, setEventFilter] = useState("All");
   const [rsvpd, setRsvpd] = useState({});
   const [profilePhoto, setProfilePhoto] = useState(null);
@@ -56,10 +69,15 @@ export default function App() {
   const [socialInput, setSocialInput] = useState("");
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [activeProfileSection, setActiveProfileSection] = useState("about");
+  const [activeConvo, setActiveConvo] = useState(null);
+  const [messages, setMessages] = useState(initialMessages);
+  const [newMessage, setNewMessage] = useState("");
+  const [likes] = useState(likedProfiles);
 
   const photoInputRef = useRef();
   const videoInputRef = useRef();
   const current = profiles[cardIndex % profiles.length];
+  const unreadCount = messages.filter((m) => m.unread).length;
 
   const swipe = (dir) => {
     if (animating) return;
@@ -81,6 +99,26 @@ export default function App() {
   const connectedSocials = socialPlatforms.filter((p) => socialLinks[p.key]);
   const unconnectedSocials = socialPlatforms.filter((p) => !socialLinks[p.key]);
 
+  const openConvo = (msg) => {
+    setMessages((prev) => prev.map((m) => m.id === msg.id ? { ...m, unread: false } : m));
+    setActiveConvo(msg);
+  };
+
+  const sendMessage = () => {
+    if (!newMessage.trim()) return;
+    setActiveConvo((prev) => ({ ...prev, messages: [...prev.messages, { from: "me", text: newMessage }] }));
+    setMessages((prev) => prev.map((m) => m.id === activeConvo.id ? { ...m, preview: newMessage, messages: [...m.messages, { from: "me", text: newMessage }] } : m));
+    setNewMessage("");
+  };
+
+  const tabs = [
+    { id: "Connect", icon: "✦", badge: likes.length },
+    { id: "Projects", icon: "◎" },
+    { id: "Events", icon: "◈" },
+    { id: "Messages", icon: "✉", badge: unreadCount },
+    { id: "Profile", icon: "◐" },
+  ];
+
   return (
     <div className="app-root">
       {/* Header */}
@@ -99,7 +137,7 @@ export default function App() {
         <div className="modal-overlay">
           <div className="modal-sheet">
             <div className="modal-title">Get Verified ✦</div>
-            <div className="modal-body">Submit a 360° photo or short selfie video so other members know you're a real person. No portfolio needed — this is just about authenticity.</div>
+            <div className="modal-body">Submit a 360° photo or short selfie video so other members know you're a real person. No portfolio needed.</div>
             <div className="upload-box">
               <div style={{ fontSize: 32, marginBottom: 8 }}>📷</div>
               <div style={{ fontSize: 13, color: "#888" }}>Tap to upload a 360° photo or selfie video</div>
@@ -108,7 +146,7 @@ export default function App() {
             <div style={{ fontSize: 11, color: "#555", marginBottom: 20, lineHeight: 1.6 }}>Your verification media is only used for identity review and never shown publicly.</div>
             <div style={{ display: "flex", gap: 10 }}>
               <button className="btn-secondary" onClick={() => setShowVerifyModal(false)}>Cancel</button>
-              <button className="btn-primary" onClick={handleVerify} style={{ flex: 2 }}>Submit for Review →</button>
+              <button className="btn-primary" style={{ flex: 2 }} onClick={handleVerify}>Submit for Review →</button>
             </div>
           </div>
         </div>
@@ -132,17 +170,78 @@ export default function App() {
         );
       })()}
 
+      {/* Chat View */}
+      {activeConvo && (
+        <div className="chat-overlay">
+          <div className="chat-header">
+            <button className="back-btn" onClick={() => setActiveConvo(null)}>←</button>
+            <div style={{ flex: 1 }}>
+              <div className="chat-name">{activeConvo.name}</div>
+              <span className="source-tag" style={{ background: sourceColors[activeConvo.source] }}>{activeConvo.source}</span>
+            </div>
+          </div>
+          <div className="chat-messages">
+            {activeConvo.messages.map((m, i) => (
+              <div key={i} className={`message ${m.from === "me" ? "mine" : "theirs"}`}>
+                <div className={`bubble ${m.from === "me" ? "bubble-mine" : "bubble-theirs"}`}>{m.text}</div>
+              </div>
+            ))}
+          </div>
+          <div className="chat-input-row">
+            <input
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+              placeholder="Say something..."
+              className="chat-input"
+            />
+            <button onClick={sendMessage} className="send-btn">→</button>
+          </div>
+        </div>
+      )}
+
+      {/* Likes Sheet */}
+      {showLikes && (
+        <div className="modal-overlay" onClick={() => setShowLikes(false)}>
+          <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div className="modal-title">✦ {likes.length} people liked you</div>
+              <button className="btn-ghost" onClick={() => setShowLikes(false)}>✕</button>
+            </div>
+            <div className="card-list">
+              {likes.map((p) => (
+                <div key={p.id} className="like-card" style={{ borderLeft: `3px solid ${p.color}` }}>
+                  <div className="like-avatar" style={{ background: p.color }}>{p.name[0]}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <div className="like-name">{p.name}</div>
+                      {p.verified && <span className="verified-badge" style={{ background: "#C8F5A0", color: "#0a0a0a" }}>✦</span>}
+                    </div>
+                    <div className="like-location">{p.location}</div>
+                    <div className="tag-row" style={{ marginTop: 6 }}>
+                      {p.mediums.map((m) => <span key={m} className="tag-muted">{m}</span>)}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <button className="btn-connect-sm" style={{ background: p.color }}>✦</button>
+                    <button className="btn-pass-sm">✕</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Content */}
       <div className="content">
 
-        {/* DISCOVER */}
-        {activeTab === "Discover" && (
+        {/* CONNECT */}
+        {activeTab === "Connect" && (
           <div className="tab-content">
             <p className="subtitle">Find your people. Start something.</p>
             <div className="card-stack">
-              {/* Peeking card */}
               <div className="card-peek" style={{ background: profiles[(cardIndex + 1) % profiles.length].color }} />
-              {/* Main card */}
               <div
                 className="card"
                 style={{
@@ -232,7 +331,7 @@ export default function App() {
                 <div className="featured-desc">{featuredEvent.desc}</div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 14 }}>
                   <div style={{ fontSize: 12, color: "#444" }}><span style={{ fontWeight: 700, color: "#222" }}>{featuredEvent.going + (rsvpd[featuredEvent.id] ? 1 : 0)}</span> going</div>
-                  <button onClick={() => toggleRsvp(featuredEvent.id)} className="btn-dark">{rsvpd[featuredEvent.id] ? "✓ Going" : "I'm in →"}</button>
+                  <button onClick={() => toggleRsvp(featuredEvent.id)} className="btn-dark" style={{ color: featuredEvent.color }}>{rsvpd[featuredEvent.id] ? "✓ Going" : "I'm in →"}</button>
                 </div>
               </div>
             )}
@@ -261,6 +360,40 @@ export default function App() {
               ))}
             </div>
             <div style={{ height: 20 }} />
+          </div>
+        )}
+
+        {/* MESSAGES */}
+        {activeTab === "Messages" && (
+          <div className="tab-content">
+            <p className="subtitle">Your conversations.</p>
+            <div className="card-list">
+              {messages.map((m) => (
+                <div key={m.id} className="message-row" onClick={() => openConvo(m)}>
+                  <div className="message-avatar" style={{ background: m.color }}>
+                    {m.name[0]}
+                    {m.unread && <div className="unread-dot" />}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                      <div className="message-name" style={{ fontWeight: m.unread ? 700 : 400 }}>{m.name}</div>
+                      <div className="message-time">{m.time}</div>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
+                      <span className="source-tag" style={{ background: sourceColors[m.source] }}>{m.source}</span>
+                      <div className="message-preview" style={{ fontWeight: m.unread ? 600 : 400, color: m.unread ? "#aaa" : "#555" }}>{m.preview}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {messages.length === 0 && (
+              <div className="empty-state" style={{ marginTop: 40 }}>
+                <div style={{ fontSize: 32, marginBottom: 8 }}>✉</div>
+                <div style={{ fontSize: 13, color: "#555" }}>No messages yet.</div>
+                <div style={{ fontSize: 12, color: "#444", marginTop: 4 }}>Connect with someone to start a conversation.</div>
+              </div>
+            )}
           </div>
         )}
 
@@ -331,7 +464,6 @@ export default function App() {
                   <div className="empty-state">
                     <div style={{ fontSize: 32, marginBottom: 8 }}>🎥</div>
                     <div style={{ fontSize: 13, color: "#555" }}>No videos yet.</div>
-                    <div style={{ fontSize: 12, color: "#444", marginTop: 4 }}>Share a clip of your work — anything goes.</div>
                   </div>
                 )}
                 <div className="card-list">
@@ -345,9 +477,6 @@ export default function App() {
                       <button onClick={() => setVideos((vids) => vids.filter((x) => x.id !== v.id))} className="btn-remove">✕</button>
                     </div>
                   ))}
-                </div>
-                <div className="list-card" style={{ marginTop: 10 }}>
-                  <div style={{ fontSize: 11, color: "#555", lineHeight: 1.6 }}>Videos are optional. A phone clip of rehearsal is fine.</div>
                 </div>
               </div>
             )}
@@ -364,7 +493,7 @@ export default function App() {
                           <span style={{ fontSize: 18, color: p.color, width: 24, textAlign: "center" }}>{p.icon}</span>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div className="label-sm">{p.label}</div>
-                            <div style={{ fontSize: 13, color: "#f0ece4", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{socialLinks[p.key]}</div>
+                            <div style={{ fontSize: 13, color: "#f0ece4", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{socialLinks[p.key]}</div>
                           </div>
                           <button onClick={() => { setEditingSocial(p.key); setSocialInput(socialLinks[p.key]); }} className="btn-ghost">Edit</button>
                         </div>
@@ -399,9 +528,17 @@ export default function App() {
       {/* Bottom Nav */}
       <div className="bottom-nav">
         {tabs.map((t) => (
-          <button key={t} onClick={() => setActiveTab(t)} className="nav-btn">
-            <span className="nav-icon" style={{ color: activeTab === t ? "#C8F5A0" : "#333" }}>{tabIcons[t]}</span>
-            <span className="nav-label" style={{ color: activeTab === t ? "#C8F5A0" : "#333" }}>{t}</span>
+          <button key={t.id} onClick={() => { setActiveTab(t.id); if (t.id === "Connect") setShowLikes(false); }} className="nav-btn">
+            <div style={{ position: "relative", display: "inline-flex" }}>
+              <span className="nav-icon" style={{ color: activeTab === t.id ? "#C8F5A0" : "#333" }}>{t.icon}</span>
+              {t.badge > 0 && (
+                <span
+                  className="badge"
+                  onClick={(e) => { e.stopPropagation(); if (t.id === "Connect") setShowLikes(true); }}
+                >{t.badge}</span>
+              )}
+            </div>
+            <span className="nav-label" style={{ color: activeTab === t.id ? "#C8F5A0" : "#333" }}>{t.id}</span>
           </button>
         ))}
       </div>
@@ -438,805 +575,203 @@ export default function App() {
         }
 
         .avatar {
-          width: 38px;
-          height: 38px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 14px;
-          color: #0a0a0a;
-          font-weight: 700;
-          cursor: pointer;
-          overflow: hidden;
-          flex-shrink: 0;
+          width: 38px; height: 38px; border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 14px; color: #0a0a0a; font-weight: 700;
+          cursor: pointer; overflow: hidden; flex-shrink: 0;
         }
 
         .toast {
-          position: fixed;
-          top: 68px;
-          left: 50%;
+          position: fixed; top: 68px; left: 50%;
           transform: translateX(-50%);
-          background: #C8F5A0;
-          color: #0a0a0a;
-          padding: 10px 24px;
-          border-radius: 999px;
-          font-size: 13px;
-          font-weight: 700;
-          letter-spacing: 1px;
-          z-index: 100;
-          white-space: nowrap;
+          background: #C8F5A0; color: #0a0a0a;
+          padding: 10px 24px; border-radius: 999px;
+          font-size: 13px; font-weight: 700; letter-spacing: 1px;
+          z-index: 100; white-space: nowrap;
           animation: popIn 0.25s ease;
         }
 
         .content {
-          flex: 1;
-          overflow-y: auto;
-          padding-bottom: 80px;
-          width: 100%;
+          flex: 1; overflow-y: auto;
+          padding-bottom: 80px; width: 100%;
         }
 
-        .tab-content {
-          padding: 0 16px;
-          width: 100%;
-        }
+        .tab-content { padding: 0 16px; width: 100%; }
 
         .subtitle {
-          color: #666;
-          font-size: 13px;
-          margin: 4px 0 16px;
-          padding-left: 4px;
+          color: #666; font-size: 13px;
+          margin: 4px 0 16px; padding-left: 4px;
         }
 
         .tab-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 16px;
-          padding-left: 4px;
+          display: flex; justify-content: space-between;
+          align-items: center; margin-bottom: 16px; padding-left: 4px;
         }
 
-        /* CARD STACK */
-        .card-stack {
-          position: relative;
-          width: 100%;
-          margin-bottom: 20px;
-        }
+        .card-stack { position: relative; width: 100%; margin-bottom: 20px; }
 
         .card-peek {
-          position: absolute;
-          top: 8px;
-          left: 4px;
-          right: 4px;
-          height: calc(100% - 8px);
-          border-radius: 24px;
-          opacity: 0.35;
-          z-index: 0;
+          position: absolute; top: 8px; left: 4px; right: 4px;
+          height: calc(100% - 8px); border-radius: 24px; opacity: 0.35; z-index: 0;
         }
 
         .card {
-          position: relative;
-          z-index: 1;
-          width: 100%;
-          border-radius: 24px;
-          padding: 24px;
-          display: flex;
-          flex-direction: column;
-          justify-content: space-between;
-          gap: 20px;
-          min-height: 380px;
+          position: relative; z-index: 1; width: 100%;
+          border-radius: 24px; padding: 24px;
+          display: flex; flex-direction: column;
+          justify-content: space-between; gap: 20px; min-height: 380px;
         }
 
-        .card-name {
-          font-size: 24px;
-          font-weight: 700;
-          color: #0a0a0a;
-          font-style: italic;
-        }
-
-        .card-location {
-          font-size: 12px;
-          color: #333;
-          margin-top: 2px;
-        }
-
+        .card-name { font-size: 24px; font-weight: 700; color: #0a0a0a; font-style: italic; }
+        .card-location { font-size: 12px; color: #333; margin-top: 2px; }
         .card-avatar {
-          width: 48px;
-          height: 48px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: 700;
-          font-size: 18px;
-          font-style: italic;
-          flex-shrink: 0;
+          width: 48px; height: 48px; border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          font-weight: 700; font-size: 18px; font-style: italic; flex-shrink: 0;
         }
+        .card-vibe { margin-top: 16px; font-size: 14px; color: #1a1a1a; line-height: 1.65; font-style: italic; }
 
-        .card-vibe {
-          margin-top: 16px;
-          font-size: 14px;
-          color: #1a1a1a;
-          line-height: 1.65;
-          font-style: italic;
-        }
-
-        .swipe-buttons {
-          display: flex;
-          justify-content: center;
-          gap: 24px;
-          margin-top: 4px;
-        }
-
+        .swipe-buttons { display: flex; justify-content: center; gap: 24px; margin-top: 4px; }
         .btn-pass {
-          width: 60px;
-          height: 60px;
-          border-radius: 50%;
-          background: #1a1a1a;
-          border: 1px solid #2e2e2e;
-          color: #666;
-          font-size: 20px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
+          width: 60px; height: 60px; border-radius: 50%;
+          background: #1a1a1a; border: 1px solid #2e2e2e;
+          color: #666; font-size: 20px; cursor: pointer;
+          display: flex; align-items: center; justify-content: center;
         }
-
         .btn-connect {
-          width: 60px;
-          height: 60px;
-          border-radius: 50%;
-          background: #C8F5A0;
-          border: none;
-          color: #0a0a0a;
-          font-size: 20px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: 700;
+          width: 60px; height: 60px; border-radius: 50%;
+          background: #C8F5A0; border: none; color: #0a0a0a;
+          font-size: 20px; cursor: pointer; font-weight: 700;
+          display: flex; align-items: center; justify-content: center;
         }
+        .pass-connect-label { text-align: center; color: #444; font-size: 10px; margin-top: 10px; letter-spacing: 1px; }
 
-        .pass-connect-label {
-          text-align: center;
-          color: #444;
-          font-size: 10px;
-          margin-top: 10px;
-          letter-spacing: 1px;
-        }
+        .tag-row { display: flex; flex-wrap: wrap; gap: 6px; }
+        .tag-dark-on-light { background: rgba(0,0,0,0.13); color: #0a0a0a; font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 999px; letter-spacing: 0.5px; text-transform: uppercase; }
+        .tag-light-on-dark { font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 999px; letter-spacing: 0.5px; text-transform: uppercase; }
+        .tag-muted { background: #222; color: #888; font-size: 10px; padding: 3px 8px; border-radius: 999px; font-weight: 700; }
+        .tag-outline { background: #1a1a1a; color: #f0ece4; font-size: 12px; font-weight: 700; padding: 7px 14px; border-radius: 999px; border: 1px solid #2e2e2e; }
+        .tag-add { background: transparent; color: #444; font-size: 12px; font-weight: 700; padding: 7px 14px; border-radius: 999px; border: 1px dashed #2e2e2e; cursor: pointer; }
+        .tag-purple { background: #BDB2FF; color: #0a0a0a; font-size: 12px; font-weight: 700; padding: 7px 14px; border-radius: 999px; }
 
-        /* TAGS */
-        .tag-row {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 6px;
-        }
+        .verified-badge { font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 999px; letter-spacing: 0.5px; }
+        .verify-btn { background: transparent; border: 1px dashed #444; border-radius: 999px; padding: 3px 10px; color: #888; font-size: 10px; font-weight: 700; cursor: pointer; letter-spacing: 0.5px; font-family: Georgia, serif; }
 
-        .tag-dark-on-light {
-          background: rgba(0,0,0,0.13);
-          color: #0a0a0a;
-          font-size: 10px;
-          font-weight: 700;
-          padding: 4px 10px;
-          border-radius: 999px;
-          letter-spacing: 0.5px;
-          text-transform: uppercase;
-        }
+        .card-list { display: flex; flex-direction: column; gap: 10px; }
+        .list-card { background: #141414; border-radius: 20px; padding: 20px; border: 1px solid #222; }
+        .list-card-title { font-size: 16px; font-weight: 700; color: #f0ece4; margin-top: 10px; font-style: italic; }
+        .list-card-sub { font-size: 11px; color: #555; margin-top: 2px; }
+        .list-card-desc { font-size: 13px; color: #999; margin-top: 10px; line-height: 1.6; }
+        .type-tag { font-size: 9px; font-weight: 700; padding: 3px 8px; border-radius: 999px; letter-spacing: 0.5px; text-transform: uppercase; color: #0a0a0a; white-space: nowrap; }
+        .btn-outline { margin-top: 14px; width: 100%; padding: 10px; background: transparent; border: 1px solid #2e2e2e; border-radius: 12px; color: #f0ece4; font-size: 13px; font-weight: 700; cursor: pointer; letter-spacing: 0.5px; font-family: Georgia, serif; }
 
-        .tag-light-on-dark {
-          font-size: 10px;
-          font-weight: 700;
-          padding: 4px 10px;
-          border-radius: 999px;
-          letter-spacing: 0.5px;
-          text-transform: uppercase;
-        }
+        .filter-row { display: flex; gap: 8px; overflow-x: auto; padding: 8px 4px 16px; scrollbar-width: none; }
+        .filter-pill { background: #1a1a1a; color: #555; border: 1px solid #222; border-radius: 999px; padding: 6px 14px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; cursor: pointer; white-space: nowrap; font-family: Georgia, serif; text-transform: uppercase; transition: all 0.15s; }
+        .filter-pill.active { background: #f0ece4; color: #0a0a0a; border: none; }
 
-        .tag-muted {
-          background: #222;
-          color: #888;
-          font-size: 10px;
-          padding: 3px 8px;
-          border-radius: 999px;
-          font-weight: 700;
-        }
+        .featured-event { border-radius: 20px; padding: 22px; margin-bottom: 16px; position: relative; overflow: hidden; }
+        .featured-label { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #333; margin-bottom: 8px; }
+        .featured-title { font-size: 20px; font-weight: 700; color: #0a0a0a; font-style: italic; line-height: 1.3; }
+        .featured-meta { font-size: 12px; color: #333; margin-top: 6px; }
+        .featured-desc { font-size: 13px; color: #1a1a1a; margin-top: 10px; line-height: 1.6; }
+        .btn-dark { background: #0a0a0a; border: none; border-radius: 999px; padding: 8px 18px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: Georgia, serif; }
 
-        .tag-outline {
-          background: #1a1a1a;
-          color: #f0ece4;
-          font-size: 12px;
-          font-weight: 700;
-          padding: 7px 14px;
-          border-radius: 999px;
-          border: 1px solid #2e2e2e;
-        }
+        .event-card { background: #141414; border-radius: 18px; padding: 16px; border: 1px solid #1e1e1e; display: flex; gap: 12px; align-items: flex-start; }
+        .event-date-block { min-width: 48px; text-align: center; background: #1a1a1a; border-radius: 12px; padding: 10px 6px; display: flex; flex-direction: column; align-items: center; gap: 2px; border: 1px solid #222; flex-shrink: 0; }
+        .event-day { font-size: 9px; color: #555; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; margin-top: 4px; }
+        .event-num { font-size: 14px; color: #f0ece4; font-weight: 700; }
+        .event-title { font-size: 13px; font-weight: 700; color: #f0ece4; font-style: italic; line-height: 1.3; flex: 1; }
+        .event-meta { font-size: 11px; color: #555; margin-top: 4px; }
+        .event-desc { font-size: 12px; color: #888; margin-top: 6px; line-height: 1.5; }
+        .btn-rsvp { border-radius: 999px; padding: 5px 14px; font-size: 11px; font-weight: 700; cursor: pointer; font-family: Georgia, serif; transition: all 0.15s; }
 
-        .tag-add {
-          background: transparent;
-          color: #444;
-          font-size: 12px;
-          font-weight: 700;
-          padding: 7px 14px;
-          border-radius: 999px;
-          border: 1px dashed #2e2e2e;
-          cursor: pointer;
-        }
+        /* MESSAGES */
+        .message-row { display: flex; gap: 12px; align-items: center; padding: 14px 0; border-bottom: 1px solid #1a1a1a; cursor: pointer; }
+        .message-row:active { opacity: 0.7; }
+        .message-avatar { width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; color: #0a0a0a; flex-shrink: 0; position: relative; }
+        .unread-dot { position: absolute; top: 0; right: 0; width: 10px; height: 10px; background: #C8F5A0; border-radius: 50%; border: 2px solid #0a0a0a; }
+        .message-name { font-size: 14px; color: #f0ece4; font-style: italic; }
+        .message-time { font-size: 11px; color: #444; flex-shrink: 0; }
+        .message-preview { font-size: 12px; color: #555; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+        .source-tag { font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 999px; color: #0a0a0a; flex-shrink: 0; letter-spacing: 0.3px; }
 
-        .tag-purple {
-          background: #BDB2FF;
-          color: #0a0a0a;
-          font-size: 12px;
-          font-weight: 700;
-          padding: 7px 14px;
-          border-radius: 999px;
-        }
+        /* CHAT */
+        .chat-overlay { position: fixed; inset: 0; background: #0a0a0a; z-index: 150; display: flex; flex-direction: column; }
+        .chat-header { padding: 20px 16px 12px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #1a1a1a; flex-shrink: 0; }
+        .back-btn { background: none; border: none; color: #f0ece4; font-size: 20px; cursor: pointer; padding: 4px 8px 4px 0; font-family: Georgia, serif; }
+        .chat-name { font-size: 16px; font-weight: 700; color: #f0ece4; font-style: italic; }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+        .message { display: flex; }
+        .message.mine { justify-content: flex-end; }
+        .message.theirs { justify-content: flex-start; }
+        .bubble { max-width: 75%; padding: 10px 14px; border-radius: 18px; font-size: 14px; line-height: 1.5; }
+        .bubble-mine { background: #C8F5A0; color: #0a0a0a; border-bottom-right-radius: 4px; }
+        .bubble-theirs { background: #1a1a1a; color: #f0ece4; border-bottom-left-radius: 4px; border: 1px solid #222; }
+        .chat-input-row { padding: 12px 16px 28px; display: flex; gap: 10px; border-top: 1px solid #1a1a1a; flex-shrink: 0; }
+        .chat-input { flex: 1; background: #1a1a1a; border: 1px solid #2e2e2e; border-radius: 999px; padding: 12px 16px; color: #f0ece4; font-size: 14px; font-family: Georgia, serif; outline: none; }
+        .send-btn { width: 44px; height: 44px; border-radius: 50%; background: #C8F5A0; border: none; color: #0a0a0a; font-size: 18px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
-        .verified-badge {
-          font-size: 10px;
-          font-weight: 700;
-          padding: 3px 10px;
-          border-radius: 999px;
-          letter-spacing: 0.5px;
-        }
-
-        .verify-btn {
-          background: transparent;
-          border: 1px dashed #444;
-          border-radius: 999px;
-          padding: 3px 10px;
-          color: #888;
-          font-size: 10px;
-          font-weight: 700;
-          cursor: pointer;
-          letter-spacing: 0.5px;
-          font-family: Georgia, serif;
-        }
-
-        /* CARDS */
-        .card-list {
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-        }
-
-        .list-card {
-          background: #141414;
-          border-radius: 20px;
-          padding: 20px;
-          border: 1px solid #222;
-        }
-
-        .list-card-title {
-          font-size: 16px;
-          font-weight: 700;
-          color: #f0ece4;
-          margin-top: 10px;
-          font-style: italic;
-        }
-
-        .list-card-sub {
-          font-size: 11px;
-          color: #555;
-          margin-top: 2px;
-        }
-
-        .list-card-desc {
-          font-size: 13px;
-          color: #999;
-          margin-top: 10px;
-          line-height: 1.6;
-        }
-
-        .type-tag {
-          font-size: 9px;
-          font-weight: 700;
-          padding: 3px 8px;
-          border-radius: 999px;
-          letter-spacing: 0.5px;
-          text-transform: uppercase;
-          color: #0a0a0a;
-          white-space: nowrap;
-        }
-
-        .btn-outline {
-          margin-top: 14px;
-          width: 100%;
-          padding: 10px;
-          background: transparent;
-          border: 1px solid #2e2e2e;
-          border-radius: 12px;
-          color: #f0ece4;
-          font-size: 13px;
-          font-weight: 700;
-          cursor: pointer;
-          letter-spacing: 0.5px;
-          font-family: Georgia, serif;
-        }
-
-        /* EVENTS */
-        .filter-row {
-          display: flex;
-          gap: 8px;
-          overflow-x: auto;
-          padding: 8px 4px 16px;
-          scrollbar-width: none;
-        }
-
-        .filter-pill {
-          background: #1a1a1a;
-          color: #555;
-          border: 1px solid #222;
-          border-radius: 999px;
-          padding: 6px 14px;
-          font-size: 10px;
-          font-weight: 700;
-          letter-spacing: 0.5px;
-          cursor: pointer;
-          white-space: nowrap;
-          font-family: Georgia, serif;
-          text-transform: uppercase;
-          transition: all 0.15s;
-        }
-
-        .filter-pill.active {
-          background: #f0ece4;
-          color: #0a0a0a;
-          border: none;
-        }
-
-        .featured-event {
-          border-radius: 20px;
-          padding: 22px;
-          margin-bottom: 16px;
-          position: relative;
-          overflow: hidden;
-        }
-
-        .featured-label {
-          font-size: 10px;
-          font-weight: 700;
-          letter-spacing: 1.5px;
-          text-transform: uppercase;
-          color: #333;
-          margin-bottom: 8px;
-        }
-
-        .featured-title {
-          font-size: 20px;
-          font-weight: 700;
-          color: #0a0a0a;
-          font-style: italic;
-          line-height: 1.3;
-        }
-
-        .featured-meta {
-          font-size: 12px;
-          color: #333;
-          margin-top: 6px;
-        }
-
-        .featured-desc {
-          font-size: 13px;
-          color: #1a1a1a;
-          margin-top: 10px;
-          line-height: 1.6;
-        }
-
-        .btn-dark {
-          background: #0a0a0a;
-          border: none;
-          border-radius: 999px;
-          padding: 8px 18px;
-          font-size: 12px;
-          font-weight: 700;
-          cursor: pointer;
-          font-family: Georgia, serif;
-          letter-spacing: 0.5px;
-        }
-
-        .event-card {
-          background: #141414;
-          border-radius: 18px;
-          padding: 16px;
-          border: 1px solid #1e1e1e;
-          display: flex;
-          gap: 12px;
-          align-items: flex-start;
-        }
-
-        .event-date-block {
-          min-width: 48px;
-          text-align: center;
-          background: #1a1a1a;
-          border-radius: 12px;
-          padding: 10px 6px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 2px;
-          border: 1px solid #222;
-          flex-shrink: 0;
-        }
-
-        .event-day {
-          font-size: 9px;
-          color: #555;
-          font-weight: 700;
-          letter-spacing: 0.5px;
-          text-transform: uppercase;
-          margin-top: 4px;
-        }
-
-        .event-num {
-          font-size: 14px;
-          color: #f0ece4;
-          font-weight: 700;
-        }
-
-        .event-title {
-          font-size: 13px;
-          font-weight: 700;
-          color: #f0ece4;
-          font-style: italic;
-          line-height: 1.3;
-          flex: 1;
-        }
-
-        .event-meta {
-          font-size: 11px;
-          color: #555;
-          margin-top: 4px;
-        }
-
-        .event-desc {
-          font-size: 12px;
-          color: #888;
-          margin-top: 6px;
-          line-height: 1.5;
-        }
-
-        .btn-rsvp {
-          border-radius: 999px;
-          padding: 5px 14px;
-          font-size: 11px;
-          font-weight: 700;
-          cursor: pointer;
-          font-family: Georgia, serif;
-          letter-spacing: 0.3px;
-          transition: all 0.15s;
-        }
+        /* LIKES */
+        .like-card { background: #141414; border-radius: 16px; padding: 14px 16px; border: 1px solid #222; display: flex; gap: 12px; align-items: center; }
+        .like-avatar { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; color: #0a0a0a; flex-shrink: 0; }
+        .like-name { font-size: 14px; font-weight: 700; color: #f0ece4; font-style: italic; }
+        .like-location { font-size: 11px; color: #555; margin-top: 2px; }
+        .btn-connect-sm { width: 32px; height: 32px; border-radius: 50%; border: none; color: #0a0a0a; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .btn-pass-sm { width: 32px; height: 32px; border-radius: 50%; background: #1a1a1a; border: 1px solid #2e2e2e; color: #666; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
         /* PROFILE */
-        .profile-avatar {
-          width: 88px;
-          height: 88px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 32px;
-          color: #0a0a0a;
-          font-weight: 700;
-          font-style: italic;
-          cursor: pointer;
-          overflow: hidden;
-          flex-shrink: 0;
-        }
+        .profile-avatar { width: 88px; height: 88px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; color: #0a0a0a; font-weight: 700; font-style: italic; cursor: pointer; overflow: hidden; flex-shrink: 0; }
+        .camera-btn { position: absolute; bottom: 2px; right: 2px; width: 26px; height: 26px; border-radius: 50%; background: #f0ece4; display: flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer; border: 2px solid #0a0a0a; }
+        .profile-name { font-size: 22px; font-weight: 700; color: #f0ece4; font-style: italic; }
+        .profile-bio { font-size: 14px; color: #aaa; line-height: 1.7; font-style: italic; margin-bottom: 20px; padding-left: 2px; }
+        .profile-tabs { display: flex; border-bottom: 1px solid #1e1e1e; margin-bottom: 20px; }
+        .profile-tab { flex: 1; background: none; border: none; border-bottom: 2px solid transparent; color: #555; font-size: 11px; font-weight: 700; padding: 8px 0 12px; cursor: pointer; letter-spacing: 1px; text-transform: uppercase; font-family: Georgia, serif; transition: all 0.15s; margin-bottom: -1px; }
+        .profile-tab.active { border-bottom: 2px solid #C8F5A0; color: #f0ece4; }
+        .level-btn { flex: 1; padding: 9px 4px; border-radius: 10px; border: none; background: #222; color: #555; font-size: 11px; font-weight: 700; cursor: pointer; font-family: Georgia, serif; }
+        .level-btn.active { background: #f0ece4; color: #0a0a0a; }
 
-        .camera-btn {
-          position: absolute;
-          bottom: 2px;
-          right: 2px;
-          width: 26px;
-          height: 26px;
-          border-radius: 50%;
-          background: #f0ece4;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 13px;
-          cursor: pointer;
-          border: 2px solid #0a0a0a;
-        }
+        .video-card { background: #141414; border-radius: 16px; border: 1px solid #1e1e1e; display: flex; align-items: center; gap: 14px; padding: 14px 16px; }
+        .video-thumb { width: 72px; height: 52px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #555; }
+        .video-label { font-size: 13px; font-weight: 700; color: #f0ece4; font-style: italic; line-height: 1.3; }
+        .btn-remove { background: none; border: none; color: #444; font-size: 16px; cursor: pointer; padding: 4px; }
 
-        .profile-name {
-          font-size: 22px;
-          font-weight: 700;
-          color: #f0ece4;
-          font-style: italic;
-        }
+        .social-card { background: #141414; border-radius: 14px; padding: 12px 16px; border: 1px solid #222; display: flex; align-items: center; gap: 12px; }
+        .social-card-btn { background: #141414; border-radius: 14px; padding: 12px 16px; border: 1px solid #1e1e1e; display: flex; align-items: center; gap: 12px; cursor: pointer; width: 100%; text-align: left; font-family: Georgia, serif; }
 
-        .profile-bio {
-          font-size: 14px;
-          color: #aaa;
-          line-height: 1.7;
-          font-style: italic;
-          margin-bottom: 20px;
-          padding-left: 2px;
-        }
-
-        .profile-tabs {
-          display: flex;
-          border-bottom: 1px solid #1e1e1e;
-          margin-bottom: 20px;
-        }
-
-        .profile-tab {
-          flex: 1;
-          background: none;
-          border: none;
-          border-bottom: 2px solid transparent;
-          color: #555;
-          font-size: 11px;
-          font-weight: 700;
-          padding: 8px 0 12px;
-          cursor: pointer;
-          letter-spacing: 1px;
-          text-transform: uppercase;
-          font-family: Georgia, serif;
-          transition: all 0.15s;
-          margin-bottom: -1px;
-        }
-
-        .profile-tab.active {
-          border-bottom: 2px solid #C8F5A0;
-          color: #f0ece4;
-        }
-
-        .level-btn {
-          flex: 1;
-          padding: 9px 4px;
-          border-radius: 10px;
-          border: none;
-          background: #222;
-          color: #555;
-          font-size: 11px;
-          font-weight: 700;
-          cursor: pointer;
-          font-family: Georgia, serif;
-        }
-
-        .level-btn.active {
-          background: #f0ece4;
-          color: #0a0a0a;
-        }
-
-        .video-card {
-          background: #141414;
-          border-radius: 16px;
-          border: 1px solid #1e1e1e;
-          display: flex;
-          align-items: center;
-          gap: 14px;
-          padding: 14px 16px;
-        }
-
-        .video-thumb {
-          width: 72px;
-          height: 52px;
-          border-radius: 10px;
-          flex-shrink: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 22px;
-          color: #555;
-        }
-
-        .video-label {
-          font-size: 13px;
-          font-weight: 700;
-          color: #f0ece4;
-          font-style: italic;
-          line-height: 1.3;
-        }
-
-        .btn-remove {
-          background: none;
-          border: none;
-          color: #444;
-          font-size: 16px;
-          cursor: pointer;
-          padding: 4px;
-        }
-
-        .social-card {
-          background: #141414;
-          border-radius: 14px;
-          padding: 12px 16px;
-          border: 1px solid #222;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .social-card-btn {
-          background: #141414;
-          border-radius: 14px;
-          padding: 12px 16px;
-          border: 1px solid #1e1e1e;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          cursor: pointer;
-          width: 100%;
-          text-align: left;
-          font-family: Georgia, serif;
-        }
-
-        .empty-state {
-          background: #141414;
-          border-radius: 16px;
-          padding: 32px;
-          border: 1px dashed #222;
-          text-align: center;
-          margin-bottom: 16px;
-        }
+        .empty-state { background: #141414; border-radius: 16px; padding: 32px; border: 1px dashed #222; text-align: center; margin-bottom: 16px; }
 
         /* BUTTONS */
-        .btn-accent {
-          border: none;
-          border-radius: 999px;
-          padding: 6px 14px;
-          font-size: 10px;
-          font-weight: 700;
-          letter-spacing: 0.5px;
-          cursor: pointer;
-          text-transform: uppercase;
-          color: #0a0a0a;
-          font-family: Georgia, serif;
-        }
+        .btn-accent { border: none; border-radius: 999px; padding: 6px 14px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; cursor: pointer; text-transform: uppercase; color: #0a0a0a; font-family: Georgia, serif; }
+        .btn-primary { padding: 12px; background: #C8F5A0; border: none; border-radius: 12px; color: #0a0a0a; font-size: 13px; font-weight: 700; cursor: pointer; font-family: Georgia, serif; }
+        .btn-secondary { flex: 1; padding: 12px; background: #1a1a1a; border: 1px solid #2e2e2e; border-radius: 12px; color: #888; font-size: 13px; cursor: pointer; font-family: Georgia, serif; }
+        .btn-ghost { background: #1a1a1a; border: 1px solid #2e2e2e; border-radius: 999px; padding: 5px 12px; color: #888; font-size: 10px; font-weight: 700; cursor: pointer; letter-spacing: 0.5px; font-family: Georgia, serif; }
 
-        .btn-primary {
-          flex: 2;
-          padding: 12px;
-          background: #C8F5A0;
-          border: none;
-          border-radius: 12px;
-          color: #0a0a0a;
-          font-size: 13px;
-          font-weight: 700;
-          cursor: pointer;
-          font-family: Georgia, serif;
-        }
-
-        .btn-secondary {
-          flex: 1;
-          padding: 12px;
-          background: #1a1a1a;
-          border: 1px solid #2e2e2e;
-          border-radius: 12px;
-          color: #888;
-          font-size: 13px;
-          cursor: pointer;
-          font-family: Georgia, serif;
-        }
-
-        .btn-ghost {
-          background: #1a1a1a;
-          border: 1px solid #2e2e2e;
-          border-radius: 999px;
-          padding: 5px 12px;
-          color: #888;
-          font-size: 10px;
-          font-weight: 700;
-          cursor: pointer;
-          letter-spacing: 0.5px;
-          font-family: Georgia, serif;
-        }
-
-        /* MISC */
-        .label-sm {
-          font-size: 10px;
-          font-weight: 700;
-          color: #444;
-          letter-spacing: 1px;
-          text-transform: uppercase;
-        }
+        .label-sm { font-size: 10px; font-weight: 700; color: #444; letter-spacing: 1px; text-transform: uppercase; }
 
         /* MODALS */
-        .modal-overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(0,0,0,0.85);
-          z-index: 200;
-          display: flex;
-          align-items: flex-end;
-        }
-
-        .modal-sheet {
-          background: #141414;
-          border-radius: 24px 24px 0 0;
-          padding: 28px;
-          width: 100%;
-          border: 1px solid #222;
-          border-bottom: none;
-          animation: slideUp 0.3s ease;
-        }
-
-        .modal-title {
-          font-size: 18px;
-          font-weight: 700;
-          color: #f0ece4;
-          font-style: italic;
-          margin-bottom: 8px;
-        }
-
-        .modal-body {
-          font-size: 13px;
-          color: #888;
-          line-height: 1.6;
-          margin-bottom: 20px;
-        }
-
-        .modal-input {
-          width: 100%;
-          padding: 14px 16px;
-          background: #1a1a1a;
-          border: 1px solid #2e2e2e;
-          border-radius: 12px;
-          color: #f0ece4;
-          font-size: 14px;
-          font-family: Georgia, serif;
-          outline: none;
-          margin-bottom: 16px;
-        }
-
-        .upload-box {
-          background: #1a1a1a;
-          border-radius: 16px;
-          padding: 20px;
-          border: 1px dashed #333;
-          text-align: center;
-          margin-bottom: 16px;
-          cursor: pointer;
-        }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 200; display: flex; align-items: flex-end; }
+        .modal-sheet { background: #141414; border-radius: 24px 24px 0 0; padding: 28px; width: 100%; border: 1px solid #222; border-bottom: none; animation: slideUp 0.3s ease; }
+        .modal-title { font-size: 18px; font-weight: 700; color: #f0ece4; font-style: italic; margin-bottom: 8px; }
+        .modal-body { font-size: 13px; color: #888; line-height: 1.6; margin-bottom: 20px; }
+        .modal-input { width: 100%; padding: 14px 16px; background: #1a1a1a; border: 1px solid #2e2e2e; border-radius: 12px; color: #f0ece4; font-size: 14px; font-family: Georgia, serif; outline: none; margin-bottom: 16px; }
+        .upload-box { background: #1a1a1a; border-radius: 16px; padding: 20px; border: 1px dashed #333; text-align: center; margin-bottom: 16px; cursor: pointer; }
 
         /* BOTTOM NAV */
-        .bottom-nav {
-          position: fixed;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          width: 100%;
-          background: #0a0a0a;
-          border-top: 1px solid #1a1a1a;
-          display: flex;
-          padding: 12px 0 20px;
-          z-index: 50;
-        }
-
-        .nav-btn {
-          flex: 1;
-          background: none;
-          border: none;
-          cursor: pointer;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 3px;
-        }
-
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; width: 100%; background: #0a0a0a; border-top: 1px solid #1a1a1a; display: flex; padding: 12px 0 20px; z-index: 50; }
+        .nav-btn { flex: 1; background: none; border: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; }
         .nav-icon { font-size: 16px; }
+        .nav-label { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; font-family: Georgia, serif; font-weight: 700; }
 
-        .nav-label {
-          font-size: 9px;
-          letter-spacing: 1px;
-          text-transform: uppercase;
-          font-family: Georgia, serif;
-          font-weight: 700;
-        }
+        .badge { position: absolute; top: -6px; right: -8px; background: #C8F5A0; color: #0a0a0a; font-size: 9px; font-weight: 700; min-width: 16px; height: 16px; border-radius: 999px; display: flex; align-items: center; justify-content: center; padding: 0 4px; font-family: Georgia, serif; cursor: pointer; }
 
         @keyframes popIn {
           from { opacity: 0; transform: translateX(-50%) scale(0.9); }
           to   { opacity: 1; transform: translateX(-50%) scale(1); }
         }
-
         @keyframes slideUp {
           from { transform: translateY(100%); }
           to   { transform: translateY(0); }
         }
-
         button:active { opacity: 0.8; }
       `}</style>
     </div>
