@@ -262,7 +262,7 @@ export default function App() {
 
         {/* DISCOVER */}
         {activeTab === "Discover" && (
-          <div style={{ padding: "0 16px" }}>
+          <div style={{ padding: "0 12px" }}>
             <p style={{ color: "#666", fontSize: 13, margin: "4px 0 20px", paddingLeft: 8 }}>Find your people. Start something.</p>
             <div style={{ position: "relative", height: 480 }}>
               <div style={{
@@ -277,7 +277,7 @@ export default function App() {
                 transform: `translateX(-50%) ${swipeDir === "left" ? "translateX(-130%) rotate(-14deg)" : swipeDir === "right" ? "translateX(130%) rotate(14deg)" : ""}`,
                 transition: animating ? "transform 0.4s cubic-bezier(0.4,0,0.2,1)" : "none",
                 width: "100%", height: 440, background: current.color,
-                borderRadius: 24, padding: 28, boxSizing: "border-box",
+                borderRadius: 24, padding: 20, boxSizing: "border-box",
                 display: "flex", flexDirection: "column", justifyContent: "space-between",
               }}>
                 <div>
